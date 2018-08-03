@@ -3,10 +3,10 @@
 # Author:ChenXuhan
 import pymysql
 dbcfg = {
-    'host': '127.0.0.1',
+    'host': '192.168.7.119',
     'port': 3306,
-    'user': 'chenxh',
-    'password': 'chenxuhan+1994',
+    'user': 'root',
+    'password': 'mysql123',
     'db': 'stackoverflow',
     'cursorclass': pymysql.cursors.DictCursor
 }

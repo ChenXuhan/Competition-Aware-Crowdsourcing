@@ -6,28 +6,44 @@ from CACR.FeatureSklearn.EntityContainer import QuestionContainer,AnswerContaine
 from CACR.FeatureSklearn.BasicService import printArray,count_day
 maxInteger = 32768
 
+
 def initData():
     sample = ''
     try:
         users = UserContainer()
 
         con = connectDB()
-        sqlstr = 'select Id,AcceptedAnswerId,CreationDate,Score,ViewCount,Body,OwnerUserId,LastActivityDate,ClosedDate,Title,AnswerCount,CommentCount,Tags from questions%s limit 10;'%(sample)
+        sqlstr = 'select Id,AcceptedAnswerId,CreationDate,Score,ViewCount,Body,OwnerUserId,LastActivityDate,' \
+                 'ClosedDate,Title,AnswerCount,CommentCount,Tags from questions%s;'%(sample)
         quesMysql = executeSQL(con,sqlstr)
         questions = QuestionContainer()
 
         sql = "select TagName from tags;"
         tagList = executeSQL(con, sql)
         questions.tagMySQL = [tag['TagName'] for tag in tagList]
-        questions.transformQuestions(quesMysql)s
+        questions.transformQuestions(quesMysql)
         questions.exportQuestion()
         questions.exportQuesTags()
+        questions.exportQuesAcceptedAns()
         # 添加用户提问和回答采用记录
         for index in range(len(questions.QuesId)):
             users.addActivity(questions.UserId[index],[questions.QuesId[index], questions.CreationDate[index]],1)
-            # print(users.questions[questions.UserId[index]])
-            # users.addActivity(-maxInteger,[questions.AcceptedAnswerId[index], -maxInteger],5)
-        quesStr = printArray(questions.QuesId)
+
+    except Exception as e:
+        print(e.args)
+    finally:
+        if con:
+            con.close()
+            # print("connection for select questions closed.")
+
+
+def sampleData(tagName):
+    try:
+        sample = ""
+        questionDf = QuestionContainer().getQuesByTags(tagName)
+        quesStr = printArray(questionDf.index)
+        users = UserContainer()
+        con = connectDB()
 
         sqlstr = "select Id,ParentId,CreationDate,OwnerUserId,Score from answers%s where ParentId in %s;" % (sample, quesStr)
         # print(sqlstr)
@@ -41,9 +57,7 @@ def initData():
         #     print(userId,",answer:",users.answers[userId])
 
         # 添加用户comment记录
-        quesStr = '(4,6)'
-        ansStr = '(7,78,96)'
-        # ansStr = printArray(answers.UserId.keys())
+        ansStr = printArray(answers.UserId.keys())
         sqlstr = "select Id,PostId,CreationDate,UserId from comments%s where PostId in %s;" % (sample, quesStr)
         comMysql = executeSQL(con, sqlstr)
         for comment in comMysql:
@@ -73,6 +87,7 @@ def initData():
         # for userId in users.post.keys():
         #     print(userId,",post:",users.post[userId])
 
+        users.exportUserActivity(tagName)
         users.utility()
 
     except Exception as e:
@@ -83,3 +98,4 @@ def initData():
             # print("connection for select questions closed.")
 
 initData()
+sampleData("c")

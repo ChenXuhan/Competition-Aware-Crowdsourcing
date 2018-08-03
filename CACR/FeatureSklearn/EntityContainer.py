@@ -3,8 +3,8 @@
 # Author:ChenXuhan
 from CACR.FeatureSklearn.BasicService import *
 from CACR.DocPrepare.DocContainer import DocContainer
-import pickle,numpy
-from pandas import DataFrame as df
+import pandas,pickle
+from pandas import DataFrame
 
 
 class QuestionContainer:
@@ -57,8 +57,11 @@ class QuestionContainer:
     def exportQuestion(self):
         file = "../../data/Questions.data"
         data=[self.QuesId,self.CreationDate,self.Score,self.ViewCount,self.Body,\
-               self.UserId,self.ActiveDays,self.ClosedDays,self.Title,self.AnswerCount,self.CommentCount]
-        data = df(data, index=['QuesId','CreationDate','Score', 'ViewCount','Body','UserId','ActiveDays','ClosedDays','Title','AnswerCount','CommentCount'])
+            self.UserId,self.ActiveDays,self.ClosedDays,self.Title,self.AnswerCount,self.CommentCount]
+        data = DataFrame(data, index=['QuesId','CreationDate','Score', 'ViewCount','Body',\
+                               'UserId','ActiveDays','ClosedDays','Title','AnswerCount',\
+                               'CommentCount'])
+        data = data.T
         data.to_csv("../../data/Questions.csv")
         data.to_pickle(file)
         return data
@@ -66,12 +69,27 @@ class QuestionContainer:
     def exportQuesTags(self):
         print('There are %d records, %d questions.'%(len(self.QuesTags),len(set(self.QuesId))))
         file = "../../data/Ques-Tags"
-        data = df(self.QuesTags, columns=['Question', 'Tag'])
+        data = DataFrame(self.QuesTags, columns=['Question', 'Tag'])
+        data['TagName'] = data['Tag'].map(lambda x: self.tagMySQL[x].lower())
         data.to_pickle(file+'.data')
-        data = data.groupby('Tag').count().sort_values(by="Question",ascending=False)
-        data = data.reset_index()
-        data['Name'] = data['Tag'].map(lambda x: self.tagMySQL[x])
+        data = data.groupby(['Tag','TagName']).count().sort_values(by="Question",ascending=False)
         data.to_csv(file+'.csv')
+
+    def getQuesByTags(self,TagName):
+        file = "../../data/Ques-Tags.data"
+        data = pandas.read_pickle(file)
+        QuesId = data[data['TagName']==TagName]['Question']
+        file = "../../data/Questions.data"
+        questions = pandas.read_pickle(file).set_index('QuesId')
+        sampleQues = questions.loc[list(QuesId)]
+        return sampleQues
+
+    def exportQuesAcceptedAns(self):
+        file = "../../data/Ques-AcceptedAnswers"
+        data = DataFrame([self.QuesId,self.UserId,self.AcceptedAnswerId], index=['Question','Questioner','AnswerId'])
+        data = data.T
+        data['Accepted'] = 1
+        data.to_pickle(file+'.data')
 
 
 class AnswerContainer:
@@ -161,10 +179,16 @@ class UserContainer:
             self.acAnswers[userId].append(action)
             return
 
+    def exportUserActivity(self, tagName):
+        file = "../../data/UserActivity_%s.data" % tagName
+        with open(file,"wb")as f:
+             pickle.dump(self, f)
+
     def utility(self):
         data = []
         for userId in self.questions.keys():
-            data[0].append([userId,len(self.questions[userId]),len(self.answers[userId]),len(self.comments[userId]),len(self.post[userId]),len(self.acAnswers[userId])])
+            data.append([userId,len(self.questions[userId]),len(self.answers[userId]),len(self.comments[userId]),\
+                            len(self.post[userId]),len(self.acAnswers[userId])])
         file = "../../data/UserData.csv"
-        data = df(data,columns=['UserId','Questions','Answers','Comments','Posts','AcAnswers'])
+        data = DataFrame(data,columns=['UserId','Questions','Answers','Comments','Posts','AcAnswers'])
         data.to_csv(file)
