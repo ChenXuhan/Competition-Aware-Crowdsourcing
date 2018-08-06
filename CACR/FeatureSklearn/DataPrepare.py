@@ -45,7 +45,8 @@ def sampleData(tagName):
         users = UserContainer()
         con = connectDB()
 
-        sqlstr = "select Id,ParentId,CreationDate,OwnerUserId,Score from answers%s where ParentId in %s;" % (sample, quesStr)
+        sqlstr = "select Id,ParentId,CreationDate,OwnerUserId,Score from answers%s where ParentId in %s;" \
+                 % (sample, quesStr)
         # print(sqlstr)
         ansMysql = executeSQL(con,sqlstr)
         answers = AnswerContainer()
@@ -98,4 +99,4 @@ def sampleData(tagName):
             # print("connection for select questions closed.")
 
 initData()
-sampleData("c")
+# sampleData("c")
